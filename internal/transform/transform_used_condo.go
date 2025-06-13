@@ -25,7 +25,6 @@ func TransformUsedCondo(tx *sql.Tx, detailCollectormodel model.DetailCollector) 
 	usedCondoModel.OccupiedAreaNum = areaTextToNum(detailCollectormodel.OccupiedAreaText)
 	usedCondoModel.OtherAreaText = detailCollectormodel.OtherAreaText
 	usedCondoModel.OtherAreaNum = areaTextToNum(detailCollectormodel.OtherAreaText)
-	log.Printf("BuiltAt変換処理: 元データ='%s'", detailCollectormodel.BuiltAt)
 	builtAt, err := time.Parse("2006年1月", detailCollectormodel.BuiltAt)
 	if err != nil {
 		log.Printf("BuiltAt変換エラー: %v", err)
@@ -33,7 +32,6 @@ func TransformUsedCondo(tx *sql.Tx, detailCollectormodel model.DetailCollector) 
 	} else {
 		usedCondoModel.BuiltAt = builtAt
 	}
-	log.Printf("BuiltAt変換結果: '%s'", usedCondoModel.BuiltAt.Format("2006-01-02"))
 	pref, city, town, address := utils.DivideAddress(detailCollectormodel.Address)
 	usedCondoModel.AddressID, _ = utils.GetAddressID(pref, city, town)
 	usedCondoModel.Address = address

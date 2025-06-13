@@ -1,7 +1,6 @@
 package parse
 
 import (
-	"log"
 	"regexp"
 	"strings"
 
@@ -20,15 +19,11 @@ func ParseDetailCollector(e *colly.HTMLElement) model.DetailCollector {
 				thText := strings.Join(strings.Fields(th.Text), " ")
 				thText = strings.Split(thText, "ヒント")[0]
 				thText = strings.ReplaceAll(thText, " ", "")
-				//fmt.Println(thText)
-				//fmt.Print(": ")
 				td := th.DOM.Next().Text()
 				td = strings.Join(strings.Fields(td), " ")
-				//fmt.Println(td)
 				switch thText {
 				case constants.UsedCondoName:
 					detailCollectormodel.UsedCondoName = td
-					//fmt.Print(td)
 				case constants.PriceText:
 					td := strings.Split(td, "[")[0]
 					temptd := strings.ReplaceAll(td, " ", "")
@@ -43,7 +38,6 @@ func ParseDetailCollector(e *colly.HTMLElement) model.DetailCollector {
 					detailCollectormodel.OtherAreaText = td
 				case constants.BuiltAt:
 					detailCollectormodel.BuiltAt = td
-					log.Printf("BuiltAtデータを検出: キー='%s', 値='%s'", thText, td)
 				case constants.Address:
 					reRemove := regexp.MustCompile(`\s?\[ ■周辺環境 \]`)
 					temptd := reRemove.ReplaceAllString(td, "")

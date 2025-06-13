@@ -3,7 +3,6 @@ package transform
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -21,27 +20,19 @@ type AccessInfo struct {
 
 func TransformStationAndBusStop(tx *sql.Tx, transportations []string, usedCondoId int) error {
 	for _, t := range transportations {
-		log.Printf("交通情報を解析中: %s", t)
 		accessList := parseAccessInfo(t)
-		log.Printf("解析結果: %d件のアクセス情報", len(accessList))
-		
-		for i, access := range accessList {
-			log.Printf("アクセス%d: IsStation=%t, TrainLine=%s, Station=%s, BusStop=%s, BusMin=%d, WalkMin=%d", 
-				i+1, access.IsStation, access.TrainLineName, access.StationName, access.BusStopName, access.BusMinutes, access.WalkingMinutes)
-			
+
+		for _, access := range accessList {
 			if access.IsStation {
 				err := db.InsertStationAccess(tx, access.TrainLineName, access.StationName, usedCondoId, access.WalkingMinutes)
 				if err != nil {
 					return fmt.Errorf("駅の挿入失敗（%s %s）: %w", access.TrainLineName, access.StationName, err)
 				}
-				log.Printf("駅アクセスを挿入: %s %s 徒歩%d分", access.TrainLineName, access.StationName, access.WalkingMinutes)
 			} else {
 				err := db.InsertBusStopAccess(tx, access.BusStopName, access.StationName, access.TrainLineName, usedCondoId, access.BusMinutes, access.WalkingMinutes)
 				if err != nil {
 					return fmt.Errorf("バス停の挿入失敗（%s）: %w", access.BusStopName, err)
 				}
-				log.Printf("バス停アクセスを挿入: %s (駅:%s, 路線:%s) バス%d分 徒歩%d分", 
-					access.BusStopName, access.StationName, access.TrainLineName, access.BusMinutes, access.WalkingMinutes)
 			}
 		}
 	}
@@ -50,28 +41,27 @@ func TransformStationAndBusStop(tx *sql.Tx, transportations []string, usedCondoI
 
 func parseAccessInfo(transportation string) []AccessInfo {
 	results := []AccessInfo{}
-	
+
 	// 複数の交通情報が含まれている場合の分割処理
 	segments := splitTransportationString(transportation)
-	log.Printf("交通情報を%dセグメントに分割: %v", len(segments), segments)
-	
+
 	for _, segment := range segments {
 		segment = strings.TrimSpace(segment)
 		if segment == "" {
 			continue
 		}
-		
+
 		// パターン1: 路線「駅」バス○分バス停名歩○分
 		re1 := regexp.MustCompile(`(.+?)「(.+?)」バス(\d+)分(.+?)歩(\d+)分`)
 		matches1 := re1.FindAllStringSubmatch(segment, -1)
-		
+
 		for _, m := range matches1 {
 			trainLine := normalize(m[1])
 			stationName := normalize(m[2])
 			busMin := toInt(m[3])
 			busStopName := normalize(m[4])
 			walkMin := toInt(m[5])
-			
+
 			results = append(results, AccessInfo{
 				IsStation:      false,
 				TrainLineName:  trainLine,
@@ -84,11 +74,11 @@ func parseAccessInfo(transportation string) []AccessInfo {
 		if len(matches1) > 0 {
 			continue
 		}
-		
+
 		// パターン2: バス会社名「バス停名」歩○分
 		re2 := regexp.MustCompile(`(.+バス)「(.+?)」(?:歩(\d+)分)?`)
 		matches2 := re2.FindAllStringSubmatch(segment, -1)
-		
+
 		for _, m := range matches2 {
 			busCompany := normalize(m[1])
 			busStopName := normalize(m[2])
@@ -96,7 +86,7 @@ func parseAccessInfo(transportation string) []AccessInfo {
 			if len(m) > 3 && m[3] != "" {
 				walkMin = toInt(m[3])
 			}
-			
+
 			results = append(results, AccessInfo{
 				IsStation:      false,
 				TrainLineName:  busCompany,
@@ -109,11 +99,11 @@ func parseAccessInfo(transportation string) []AccessInfo {
 		if len(matches2) > 0 {
 			continue
 		}
-		
+
 		// パターン3: 通常の駅アクセス（路線「駅」歩○分）※路線名のみをマッチ
 		re3 := regexp.MustCompile(`(.+線)「(.+?)」(?:歩(\d+)分)?`)
 		matches3 := re3.FindAllStringSubmatch(segment, -1)
-		
+
 		for _, m := range matches3 {
 			trainLine := normalize(m[1])
 			stationName := normalize(m[2])
@@ -121,7 +111,7 @@ func parseAccessInfo(transportation string) []AccessInfo {
 			if len(m) > 3 && m[3] != "" {
 				walkMin = toInt(m[3])
 			}
-			
+
 			results = append(results, AccessInfo{
 				IsStation:      true,
 				TrainLineName:  trainLine,
@@ -132,7 +122,7 @@ func parseAccessInfo(transportation string) []AccessInfo {
 			})
 		}
 	}
-	
+
 	return results
 }
 
@@ -140,23 +130,23 @@ func parseAccessInfo(transportation string) []AccessInfo {
 func splitTransportationString(transportation string) []string {
 	// スペースや改行で区切られた交通情報を分割
 	segments := []string{}
-	
+
 	// 改行やスペースで分割
 	parts := regexp.MustCompile(`[\s\n\r]+`).Split(transportation, -1)
-	
+
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
 		}
-		
+
 		// 複数の路線情報が連結されている場合を分割
 		// 例: "東急田園都市線「南町田グランベリーパーク」歩22分 東急田園都市線「南町田グランベリーパーク」バス9分マークスプリングス歩1分"
-		
+
 		// 路線名「駅名」で始まる部分を検索して分割
 		re := regexp.MustCompile(`([^\s]+線「[^」]+」[^\s]*)`)
 		matches := re.FindAllString(part, -1)
-		
+
 		if len(matches) > 1 {
 			// 複数のマッチがある場合は分割
 			segments = append(segments, matches...)
@@ -165,7 +155,7 @@ func splitTransportationString(transportation string) []string {
 			segments = append(segments, part)
 		}
 	}
-	
+
 	return segments
 }
 

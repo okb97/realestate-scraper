@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gocolly/colly"
+	"github.com/okb97/realestate-scraper/config"
 	"github.com/okb97/realestate-scraper/internal/db"
 	"github.com/okb97/realestate-scraper/internal/model"
 	"github.com/okb97/realestate-scraper/internal/scraper/parse"
@@ -15,6 +16,10 @@ import (
 )
 
 func RunUsedCondoScraper(conn *sql.DB) {
+	RunUsedCondoScraperWithURLs(conn, config.GetAllScrapeURLs())
+}
+
+func RunUsedCondoScraperWithURLs(conn *sql.DB, scrapeURLs []string) {
 	var detailCollectormodel model.DetailCollector
 
 	mainCollector := colly.NewCollector(
@@ -70,9 +75,20 @@ func RunUsedCondoScraper(conn *sql.DB) {
 		}
 	})
 
-	startURL := "https://suumo.jp/jj/bukken/ichiran/JJ010FJ001/?ar=030&bs=011&ta=14&jspIdFlg=patternShikugun&sc=14114&kb=1&kt=9999999&mb=0&mt=9999999&ekTjCd=&ekTjNm=&tj=0&cnb=0&cn=9999999&srch_navi=1"
-	if err := mainCollector.Visit(startURL); err != nil {
-		log.Fatal(err)
+	if len(scrapeURLs) == 0 {
+		log.Println("スクレイピング対象URLが設定されていません")
+		return
+	}
+	
+	// 各URLを順次処理
+	for _, url := range scrapeURLs {
+		log.Printf("スクレイピング開始: %s", url)
+		if err := mainCollector.Visit(url); err != nil {
+			log.Printf("URL処理失敗: %s, エラー: %v", url, err)
+			continue
+		}
+		// URL間で少し間隔を空ける
+		time.Sleep(1 * time.Second)
 	}
 
 }
