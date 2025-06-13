@@ -2,6 +2,7 @@ package transform
 
 import (
 	"database/sql"
+	"log"
 	"regexp"
 	"strconv"
 	"time"
@@ -24,7 +25,15 @@ func TransformUsedCondo(tx *sql.Tx, detailCollectormodel model.DetailCollector) 
 	usedCondoModel.OccupiedAreaNum = areaTextToNum(detailCollectormodel.OccupiedAreaText)
 	usedCondoModel.OtherAreaText = detailCollectormodel.OtherAreaText
 	usedCondoModel.OtherAreaNum = areaTextToNum(detailCollectormodel.OtherAreaText)
-	usedCondoModel.BuiltAt, _ = time.Parse(detailCollectormodel.BuiltAt, "2025年05月")
+	log.Printf("BuiltAt変換処理: 元データ='%s'", detailCollectormodel.BuiltAt)
+	builtAt, err := time.Parse("2006年1月", detailCollectormodel.BuiltAt)
+	if err != nil {
+		log.Printf("BuiltAt変換エラー: %v", err)
+		usedCondoModel.BuiltAt = time.Time{} // ゼロ値
+	} else {
+		usedCondoModel.BuiltAt = builtAt
+	}
+	log.Printf("BuiltAt変換結果: '%s'", usedCondoModel.BuiltAt.Format("2006-01-02"))
 	pref, city, town, address := utils.DivideAddress(detailCollectormodel.Address)
 	usedCondoModel.AddressID, _ = utils.GetAddressID(pref, city, town)
 	usedCondoModel.Address = address

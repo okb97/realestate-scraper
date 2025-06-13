@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"log"
 	"regexp"
 	"strings"
 
@@ -42,6 +43,7 @@ func ParseDetailCollector(e *colly.HTMLElement) model.DetailCollector {
 					detailCollectormodel.OtherAreaText = td
 				case constants.BuiltAt:
 					detailCollectormodel.BuiltAt = td
+					log.Printf("BuiltAtデータを検出: キー='%s', 値='%s'", thText, td)
 				case constants.Address:
 					reRemove := regexp.MustCompile(`\s?\[ ■周辺環境 \]`)
 					temptd := reRemove.ReplaceAllString(td, "")
