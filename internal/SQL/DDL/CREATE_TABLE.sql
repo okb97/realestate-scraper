@@ -114,45 +114,16 @@ CREATE TABLE used_condos_stations (
     FOREIGN KEY (station_id) REFERENCES station (station_id)
 );
 
--- バス路線
-DROP TABLE IF EXISTS bus_line CASCADE;
-
-CREATE TABLE bus_line (
-    bus_line_id serial PRIMARY KEY,
-    bus_line_name VARCHAR(100),
-    delete_flag BOOLEAN,
-    register_date_time TIMESTAMP,
-    update_date_time TIMESTAMP,
-    register_function VARCHAR(100),
-    update_function VARCHAR(100),
-    process_id VARCHAR(100)
-);
-
--- バス停
-DROP TABLE IF EXISTS bus_stop CASCADE;
-
-CREATE TABLE bus_stop (
-    bus_stop_id serial PRIMARY KEY,
-    bus_stop_name VARCHAR(100),
-    bus_line_id INTEGER,
-    address_id INTEGER,
-    delete_flag BOOLEAN,
-    register_date_time TIMESTAMP,
-    update_date_time TIMESTAMP,
-    register_function VARCHAR(100),
-    update_function VARCHAR(100),
-    process_id VARCHAR(100),
-    FOREIGN KEY (bus_line_id) REFERENCES bus_line (bus_line_id),
-    FOREIGN KEY (address_id) REFERENCES address (address_id)
-);
-
 -- 中古マンション-バス停
 DROP TABLE IF EXISTS used_condos_bus_stop CASCADE;
 
 CREATE TABLE used_condos_bus_stop (
     id serial PRIMARY KEY,
     used_condo_id INTEGER,
-    bus_stop_id INTEGER,
+    bus_stop_name VARCHAR(100),
+    station_name VARCHAR(100),
+    train_line_name VARCHAR(100),
+    bus_minutes INTEGER,
     walking_minutes INTEGER,
     delete_flag BOOLEAN,
     register_date_time TIMESTAMP,
@@ -160,6 +131,5 @@ CREATE TABLE used_condos_bus_stop (
     register_function VARCHAR(100),
     update_function VARCHAR(100),
     process_id VARCHAR(100),
-    FOREIGN KEY (used_condo_id) REFERENCES used_condos (used_condo_id),
-    FOREIGN KEY (bus_stop_id) REFERENCES bus_stop (bus_stop_id)
+    FOREIGN KEY (used_condo_id) REFERENCES used_condos (used_condo_id)
 );

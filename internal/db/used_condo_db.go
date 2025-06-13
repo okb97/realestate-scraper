@@ -209,8 +209,10 @@ type UsedCondoWithDetail struct {
 		WalkingMinutes int    `json:"walking_minutes"`
 	}
 	BusStops []struct {
-		BusStopID      int    `json:"bus_stop_id"`
 		BusStopName    string `json:"bus_stop_name"`
+		StationName    string `json:"station_name"`
+		TrainLineName  string `json:"train_line_name"`
+		BusMinutes     int    `json:"bus_minutes"`
 		WalkingMinutes int    `json:"walking_minutes"`
 	}
 }
@@ -271,18 +273,19 @@ func GetAllUsedCondos() ([]UsedCondoWithDetail, error) {
 	  ) FILTER (WHERE s.station_id IS NOT NULL), '[]') AS stations,
 	  COALESCE(json_agg(
 		DISTINCT jsonb_build_object(
-		  'bus_stop_id', bs.bus_stop_id,
-		  'bus_stop_name', bs.bus_stop_name,
+		  'bus_stop_name', ucb.bus_stop_name,
+		  'station_name', ucb.station_name,
+		  'train_line_name', ucb.train_line_name,
+		  'bus_minutes', ucb.bus_minutes,
 		  'walking_minutes', ucb.walking_minutes
 		)
-	  ) FILTER (WHERE bs.bus_stop_id IS NOT NULL), '[]') AS bus_stops
+	  ) FILTER (WHERE ucb.bus_stop_name IS NOT NULL), '[]') AS bus_stops
 	FROM
 	  used_condos uc
 	LEFT JOIN address a ON uc.address_id = a.address_id
 	LEFT JOIN used_condos_stations ucs ON uc.used_condo_id = ucs.used_condo_id
 	LEFT JOIN station s ON ucs.station_id = s.station_id
 	LEFT JOIN used_condos_bus_stop ucb ON uc.used_condo_id = ucb.used_condo_id
-	LEFT JOIN bus_stop bs ON ucb.bus_stop_id = bs.bus_stop_id
 	GROUP BY
 	  uc.used_condo_id,
 	  a.address_id
